@@ -117,8 +117,8 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
     curl_easy_setopt(curl_h, CURLOPT_WRITEDATA, core_h);
     curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3));
 
-     curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
-    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &config);
+    curl_easy_setopt(curl_h, CURLOPT_DEBUGFUNCTION, my_trace);
+    curl_easy_setopt(curl_h, CURLOPT_DEBUGDATA, &config);
 
     curl_easy_setopt(curl_h, CURLOPT_VERBOSE, 1L):
 
