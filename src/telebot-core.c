@@ -27,6 +27,46 @@
 #include <telebot-common.h>
 #include <telebot-core.h>
 
+static
+int my_trace(CURL *handle, curl_infotype type,
+             char *data, size_t size,
+             void *userp)
+{
+  struct data *config = (struct data *)userp;
+  const char *text;
+  (void)handle; /* prevent compiler warning */ 
+ 
+  switch(type) {
+  case CURLINFO_TEXT:
+    fprintf(stderr, "== Info: %s", data);
+    /* FALLTHROUGH */ 
+  default: /* in case a new one is introduced to shock us */ 
+    return 0;
+ 
+  case CURLINFO_HEADER_OUT:
+    text = "=> Send header";
+    break;
+  case CURLINFO_DATA_OUT:
+    text = "=> Send data";
+    break;
+  case CURLINFO_SSL_DATA_OUT:
+    text = "=> Send SSL data";
+    break;
+  case CURLINFO_HEADER_IN:
+    text = "<= Recv header";
+    break;
+  case CURLINFO_DATA_IN:
+    text = "<= Recv data";
+    break;
+  case CURLINFO_SSL_DATA_IN:
+    text = "<= Recv SSL data";
+    break;
+  }
+ 
+  dump(text, stderr, (unsigned char *)data, size, config->trace_ascii);
+  return 0;
+}
+
 static size_t write_data_cb(void *contents, size_t size, size_t nmemb,
         void *userp)
 {
@@ -52,6 +92,7 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
 {
     CURL *curl_h;
     CURLcode res;
+    struct data config;
     long resp_code = 0L;
 
     //Wait for other in-progress request
@@ -74,13 +115,19 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
     curl_easy_setopt(curl_h, CURLOPT_URL, URL);
     curl_easy_setopt(curl_h, CURLOPT_WRITEFUNCTION, write_data_cb);
     curl_easy_setopt(curl_h, CURLOPT_WRITEDATA, core_h);
+    curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3));
+
+     curl_easy_setopt(curl, CURLOPT_DEBUGFUNCTION, my_trace);
+    curl_easy_setopt(curl, CURLOPT_DEBUGDATA, &config);
+
+    curl_easy_setopt(curl_h, CURLOPT_VERBOSE, 1L):
 
     if (post != NULL)
         curl_easy_setopt(curl_h, CURLOPT_HTTPPOST, post);
 
     res = curl_easy_perform(curl_h);
     if (res != CURLE_OK) {
-        ERR("Failed to curl_easy_perform\nError: %s (%d)",
+        ERR("Failed to curl_easy_perform\nError: %s (code: %d)",
                 curl_easy_strerror(res), res);
         if (core_h->resp_data != NULL)
             free(core_h->resp_data);
@@ -101,7 +148,7 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
         return TELEBOT_ERROR_OPERATION_FAILED;
     }
 
-    DBG("Response: %s", core_h->resp_data);
+    DBG("Response: %s (http code: %ld)", core_h->resp_data, resp_code);
 
     curl_easy_cleanup(curl_h);
 
