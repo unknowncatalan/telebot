@@ -169,7 +169,7 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
     curl_easy_setopt(curl_h, CURLOPT_URL, URL);
     curl_easy_setopt(curl_h, CURLOPT_WRITEFUNCTION, write_data_cb);
     curl_easy_setopt(curl_h, CURLOPT_WRITEDATA, core_h);
-    curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3));
+    curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
 
     curl_easy_setopt(curl_h, CURLOPT_DEBUGFUNCTION, my_trace);
 
