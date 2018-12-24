@@ -58,8 +58,10 @@ telebot_error_e telebot_parser_get_updates(struct json_object *obj,
     int ret;
     struct json_object *array = obj;
     int array_len = json_object_array_length(array);
-    if (!array_len)
-        return TELEBOT_ERROR_OPERATION_FAILED;
+    if (!array_len){
+		*count = 0;
+        return TELEBOT_ERROR_NO_MESSAGE;
+	}
 
     telebot_update_t *result = calloc(array_len, sizeof(telebot_update_t));
     if (result == NULL)

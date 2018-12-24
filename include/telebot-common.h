@@ -49,6 +49,7 @@ typedef enum {
     TELEBOT_ERROR_OUT_OF_MEMORY     = -3,   /**< Out of memory */
     TELEBOT_ERROR_NO_CONNECTION     = -4,   /**< No Internet connection */
     TELEBOT_ERROR_INVALID_PARAMETER = -5,   /**< Invalid parameter */
+    TELEBOT_ERROR_NO_MESSAGE 		= -6,   /**< No message on server */
 } telebot_error_e;
 
 
