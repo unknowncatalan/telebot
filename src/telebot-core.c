@@ -169,18 +169,16 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
     curl_easy_setopt(curl_h, CURLOPT_URL, URL);
     curl_easy_setopt(curl_h, CURLOPT_WRITEFUNCTION, write_data_cb);
     curl_easy_setopt(curl_h, CURLOPT_WRITEDATA, core_h);
-    curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-
-    curl_easy_setopt(curl_h, CURLOPT_DEBUGFUNCTION, my_trace);
-
-    curl_easy_setopt(curl_h, CURLOPT_VERBOSE, 1L);
+    //curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+    //curl_easy_setopt(curl_h, CURLOPT_DEBUGFUNCTION, my_trace);
+    //curl_easy_setopt(curl_h, CURLOPT_VERBOSE, 1L);
 
     if (post != NULL)
         curl_easy_setopt(curl_h, CURLOPT_HTTPPOST, post);
 
     res = curl_easy_perform(curl_h);
     if (res != CURLE_OK) {
-        ERR("Failed to curl_easy_perform\nError: %s (code: %d)",
+        ERR("Failed to curl_easy_perform\nError: %s (error code: %d)",
                 curl_easy_strerror(res), res);
         if (core_h->resp_data != NULL)
             free(core_h->resp_data);
