@@ -27,101 +27,6 @@
 #include <telebot-common.h>
 #include <telebot-core.h>
 
-struct data {
-  char trace_ascii; /* 1 or 0 */ 
-};
-
-static
-void dump(const char *text,
-          FILE *stream, unsigned char *ptr, size_t size,
-          char nohex)
-{
-  size_t i;
-  size_t c;
- 
-  unsigned int width = 0x10;
- 
-  if(nohex)
-    /* without the hex output, we can fit more on screen */ 
-    width = 0x40;
- 
-  fprintf(stream, "%s, %10.10lu bytes (0x%8.8lx)\n",
-          text, (unsigned long)size, (unsigned long)size);
- 
-  for(i = 0; i<size; i += width) {
- 
-    fprintf(stream, "%4.4lx: ", (unsigned long)i);
- 
-    if(!nohex) {
-      /* hex not disabled, show it */ 
-      for(c = 0; c < width; c++)
-        if(i + c < size)
-          fprintf(stream, "%02x ", ptr[i + c]);
-        else
-          fputs("   ", stream);
-    }
- 
-    for(c = 0; (c < width) && (i + c < size); c++) {
-      /* check for 0D0A; if found, skip past and start a new line of output */ 
-      if(nohex && (i + c + 1 < size) && ptr[i + c] == 0x0D &&
-         ptr[i + c + 1] == 0x0A) {
-        i += (c + 2 - width);
-        break;
-      }
-      fprintf(stream, "%c",
-              (ptr[i + c] >= 0x20) && (ptr[i + c]<0x80)?ptr[i + c]:'.');
-      /* check again for 0D0A, to avoid an extra \n if it's at width */ 
-      if(nohex && (i + c + 2 < size) && ptr[i + c + 1] == 0x0D &&
-         ptr[i + c + 2] == 0x0A) {
-        i += (c + 3 - width);
-        break;
-      }
-    }
-    fputc('\n', stream); /* newline */ 
-  }
-  fflush(stream);
-}
-
-static
-int my_trace(CURL *handle, curl_infotype type,
-             char *data, size_t size,
-             void *userp)
-{
-  struct data *config = (struct data *)userp;
-  const char *text;
-  (void)handle; /* prevent compiler warning */ 
- 
-  switch(type) {
-  case CURLINFO_TEXT:
-    fprintf(stderr, "== Info: %s", data);
-    /* FALLTHROUGH */ 
-  default: /* in case a new one is introduced to shock us */ 
-    return 0;
- 
-  case CURLINFO_HEADER_OUT:
-    text = "=> Send header";
-    break;
-  case CURLINFO_DATA_OUT:
-    text = "=> Send data";
-    break;
-  case CURLINFO_SSL_DATA_OUT:
-    text = "=> Send SSL data";
-    break;
-  case CURLINFO_HEADER_IN:
-    text = "<= Recv header";
-    break;
-  case CURLINFO_DATA_IN:
-    text = "<= Recv data";
-    break;
-  case CURLINFO_SSL_DATA_IN:
-    text = "<= Recv SSL data";
-    break;
-  }
- 
-  dump(text, stderr, (unsigned char *)data, size, config->trace_ascii);
-  return 0;
-}
-
 static size_t write_data_cb(void *contents, size_t size, size_t nmemb,
         void *userp)
 {
@@ -169,9 +74,6 @@ static telebot_error_e telebot_core_curl_perform(telebot_core_handler_t *core_h,
     curl_easy_setopt(curl_h, CURLOPT_URL, URL);
     curl_easy_setopt(curl_h, CURLOPT_WRITEFUNCTION, write_data_cb);
     curl_easy_setopt(curl_h, CURLOPT_WRITEDATA, core_h);
-    //curl_easy_setopt(curl_h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-    //curl_easy_setopt(curl_h, CURLOPT_DEBUGFUNCTION, my_trace);
-    //curl_easy_setopt(curl_h, CURLOPT_VERBOSE, 1L);
 
     if (post != NULL)
         curl_easy_setopt(curl_h, CURLOPT_HTTPPOST, post);
