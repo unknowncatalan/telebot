@@ -141,33 +141,42 @@ telebot_error_e telebot_get_updates(telebot_handler_t handle, int offset,
 
     int ret = telebot_core_get_updates(_handle->core_h, _offset,
             _limit, _timeout, allowed_updates_str);
+    
+    DBG("telebot_core_get_updates return: %ld", ret);
     if (ret != TELEBOT_ERROR_NONE)
         return ret;
 
     struct json_object *obj = telebot_parser_str_to_obj(_handle->core_h->resp_data);
+    DBG("JSON parsed");
     tb_sfree_zcnt(_handle->core_h->resp_data, _handle->core_h->resp_size);
 
-    if (obj == NULL)
+    if (obj == NULL){
+        DBG("JSON parsed is NULL");
         return TELEBOT_ERROR_OPERATION_FAILED;
+    }
 
     struct json_object *ok;
     if (!json_object_object_get_ex(obj, "ok", &ok)) {
+        DBG("JSON doesn't contain \"ok\"");
         json_object_put(obj);
         return TELEBOT_ERROR_OPERATION_FAILED;
     }
 
     if (!json_object_get_boolean(ok)) {
+        DBG("Response contained in JSON was negative");
         json_object_put(obj);
         return TELEBOT_ERROR_OPERATION_FAILED;
     }
 
     struct json_object *result;
     if (!json_object_object_get_ex(obj, "result", &result)) {
+        DBG("No \"result\" in the JSON");
         json_object_put(obj);
         return TELEBOT_ERROR_OPERATION_FAILED;
     }
 
     ret = telebot_parser_get_updates(result, updates, count);
+    DBG("Updates parsed");
     json_object_put(obj);
 
     if (ret != TELEBOT_ERROR_NONE)
