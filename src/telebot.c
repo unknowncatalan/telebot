@@ -58,6 +58,7 @@ static void telebot_free_document(telebot_document_t *document);
 static void telebot_free_photo(telebot_photo_t *photo);
 static void telebot_free_sticker(telebot_sticker_t *sticker);
 static void telebot_free_video(telebot_video_t *video);
+static void telebot_free_animation(telebot_animation_t *animation);
 static void telebot_free_voice(telebot_voice_t *voice);
 static void telebot_free_video_note(telebot_video_note_t *vnote);
 static void telebot_free_contact(telebot_contact_t *contact);
@@ -104,10 +105,43 @@ telebot_error_e telebot_destroy(telebot_handler_t handle)
     return TELEBOT_ERROR_NONE;
 }
 
+telebot_error_e telebot_set_proxy(telebot_handler_t handle, char *addr, char *auth)
+{
+    if (addr == NULL)
+        return TELEBOT_ERROR_INVALID_PARAMETER;
+
+    telebot_hdata_t * _handle = (telebot_hdata_t *)handle;
+    if (_handle == NULL)
+        return TELEBOT_ERROR_NOT_SUPPORTED;
+
+    telebot_error_e ret = telebot_core_set_proxy(_handle->core_h, addr, auth);
+    if (ret != TELEBOT_ERROR_NONE)
+        return ret;
+
+    return TELEBOT_ERROR_NONE;
+}
+
+telebot_error_e telebot_get_proxy(telebot_handler_t handle, char **addr)
+{
+    if (addr == NULL)
+        return TELEBOT_ERROR_INVALID_PARAMETER;
+
+    *addr = NULL;
+
+    telebot_hdata_t * _handle = (telebot_hdata_t *)handle;
+    if (_handle == NULL)
+        return TELEBOT_ERROR_NOT_SUPPORTED;
+
+    return telebot_core_get_proxy(_handle->core_h, addr);
+}
+
+
 telebot_error_e telebot_get_updates(telebot_handler_t handle, int offset,
         int limit, int timeout, telebot_update_type_e allowed_updates[],
         int allowed_updates_count, telebot_update_t **updates, int *count)
 {
+    int i = 0;
+    char allowed_updates_str[TELEBOT_BUFFER_PAGE] = {0, };
     telebot_hdata_t *_handle = (telebot_hdata_t *)handle;
     if (_handle == NULL)
         return TELEBOT_ERROR_NOT_SUPPORTED;
@@ -118,17 +152,15 @@ telebot_error_e telebot_get_updates(telebot_handler_t handle, int offset,
     *updates = NULL;
     *count = 0;
 
-    int i = 0;
-    char allowed_updates_str[1024] = "";
     if (allowed_updates_count > 0) {
-        snprintf(allowed_updates_str, 1024, "%s", "[");
+        strncat(allowed_updates_str, "[", TELEBOT_BUFFER_BLOCK);
         for (i=0;i<allowed_updates_count;i++) {
-            strncat(allowed_updates_str, telebot_update_type_str[allowed_updates[i]], 1024 - strlen(allowed_updates_str));
+            strncat(allowed_updates_str, telebot_update_type_str[allowed_updates[i]], TELEBOT_BUFFER_BLOCK - strlen(allowed_updates_str) -1);
             if (i < (allowed_updates_count-1)) //intermediate element
-                strncat(allowed_updates_str, ",", 1024 - strlen(allowed_updates_str) );
+                strncat(allowed_updates_str, ",", TELEBOT_BUFFER_BLOCK - strlen(allowed_updates_str) -1);
         }
 
-        strncat(allowed_updates_str, "]", 1024 - strlen(allowed_updates_str));
+        strncat(allowed_updates_str, "]", TELEBOT_BUFFER_BLOCK - strlen(allowed_updates_str) - 1);
     }
 
     int _offset = offset != 0 ? offset : _handle->offset;
@@ -288,6 +320,8 @@ telebot_error_e telebot_set_webhook(telebot_handler_t handle, char *url,
         char *certificate, int max_connections,
         telebot_update_type_e allowed_updates[], int allowed_updates_count)
 {
+    int i = 0;
+    char allowed_updates_str[TELEBOT_BUFFER_PAGE] = {0, };
     telebot_hdata_t * _handle = (telebot_hdata_t *)handle;
     if (_handle == NULL)
         return TELEBOT_ERROR_NOT_SUPPORTED;
@@ -295,17 +329,18 @@ telebot_error_e telebot_set_webhook(telebot_handler_t handle, char *url,
     if (url == NULL)
         return TELEBOT_ERROR_INVALID_PARAMETER;
 
-    int i = 0;
-    char allowed_updates_str[1024] = "";
     if (allowed_updates_count > 0) {
-        snprintf(allowed_updates_str, 1024, "%s", "[");
+        strncat(allowed_updates_str, "[", TELEBOT_BUFFER_BLOCK);
         for (i=0;i<allowed_updates_count;i++) {
-            strncat(allowed_updates_str, telebot_update_type_str[allowed_updates[i]], 1024 - strlen(allowed_updates_str));
+            strncat(allowed_updates_str, telebot_update_type_str[allowed_updates[i]], 
+                TELEBOT_BUFFER_BLOCK - strlen(allowed_updates_str) - 1);
             if (i < (allowed_updates_count-1)) //intermediate element
-                strncat(allowed_updates_str, ",", 1024 - strlen(allowed_updates_str) );
+                strncat(allowed_updates_str, ",", 
+                    TELEBOT_BUFFER_BLOCK - strlen(allowed_updates_str) - 1);
         }
 
-        strncat(allowed_updates_str, "]", 1024 - strlen(allowed_updates_str));
+        strncat(allowed_updates_str, "]", 
+            TELEBOT_BUFFER_BLOCK - strlen(allowed_updates_str) -1);
     }
 
     telebot_error_e ret = telebot_core_set_webhook(_handle->core_h, url,
@@ -507,6 +542,27 @@ telebot_error_e telebot_send_video(telebot_handler_t handle, long long int chat_
         return TELEBOT_ERROR_INVALID_PARAMETER;
 
     telebot_error_e ret = telebot_core_send_video(_handle->core_h, chat_id, video,
+            is_file, duration, caption, disable_notification, reply_to_message_id,
+            reply_markup);
+
+    tb_sfree_zcnt(_handle->core_h->resp_data, _handle->core_h->resp_size);
+
+    return ret;
+}
+
+telebot_error_e telebot_send_animation(telebot_handler_t handle, long long int chat_id,
+        char *video, bool is_file, int duration, int width, int height,
+        char *caption, bool disable_notification, int reply_to_message_id,
+        char *reply_markup)
+{
+    telebot_hdata_t * _handle = (telebot_hdata_t *)handle;
+    if (_handle == NULL)
+        return TELEBOT_ERROR_NOT_SUPPORTED;
+
+    if (video == NULL)
+        return TELEBOT_ERROR_INVALID_PARAMETER;
+
+    telebot_error_e ret = telebot_core_send_animation(_handle->core_h, chat_id, video,
             is_file, duration, caption, disable_notification, reply_to_message_id,
             reply_markup);
 
@@ -848,6 +904,9 @@ static void telebot_free_message(telebot_message_t *msg)
     telebot_free_video(msg->video);
     tb_sfree(msg->video);
 
+    telebot_free_animation(msg->animation);
+    tb_sfree(msg->animation);
+
     telebot_free_voice(msg->voice);
     tb_sfree(msg->voice);
 
@@ -941,6 +1000,16 @@ static void telebot_free_video(telebot_video_t *video)
     telebot_free_photo(video->thumb);
     tb_sfree(video->thumb);
     tb_sfree(video->mime_type);
+}
+
+static void telebot_free_animation(telebot_animation_t *animation)
+{
+    if (animation == NULL) return;
+
+    tb_sfree(animation->file_id);
+    telebot_free_photo(animation->thumb);
+    tb_sfree(animation->thumb);
+    tb_sfree(animation->mime_type);
 }
 
 static void telebot_free_voice(telebot_voice_t *voice)

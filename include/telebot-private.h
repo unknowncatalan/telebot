@@ -21,6 +21,9 @@
 
 #define TELEBOT_API_URL                      "https://api.telegram.org"
 #define TELEBOT_URL_SIZE                     1024
+#define TELEBOT_BUFFER_SECTOR                512
+#define TELEBOT_BUFFER_BLOCK                 1024
+#define TELEBOT_BUFFER_PAGE                  4096
 #define TELEBOT_UPDATE_COUNT_MAX_LIMIT       100
 #define TELEBOT_USER_PROFILE_PHOTOS_LIMIT    100
 
@@ -35,6 +38,7 @@
 #define TELEBOT_METHOD_SEND_AUDIO                   "sendAudio"
 #define TELEBOT_METHOD_SEND_DOCUMENT                "sendDocument"
 #define TELEBOT_METHOD_SEND_VIDEO                   "sendVideo"
+#define TELEBOT_METHOD_SEND_ANIMATION               "sendAnimation"
 #define TELEBOT_METHOD_SEND_VOICE                   "sendVoice"
 #define TELEBOT_METHOD_SEND_VIDEO_NOTE              "sendVideoNote"
 #define TELEBOT_METHOD_SEND_MEDIA_GROUP             "sendMediaGroup"
@@ -72,8 +76,8 @@
 #define TELEBOT_METHOD_SEND_STICKER                 "sendSticker"
 
 #ifdef DEBUG
-    #define ERR(fmt, args...) printf("[ERROR][%s:%d]" fmt "\n", __func__, __LINE__, ##args)
-    #define DBG(fmt, args...) printf("[DEBUG][%s:%d]" fmt "\n", __func__, __LINE__, ##args)
+    #define ERR(fmt, args...) fprintf(stderr, "[ERROR][%s:%d]" fmt "\n", __func__, __LINE__, ##args)
+    #define DBG(fmt, args...) fprintf(stdout, "[DEBUG][%s:%d]" fmt "\n", __func__, __LINE__, ##args)
 #else
     #define ERR(x, ...)
     #define DBG(x, ...)
