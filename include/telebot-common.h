@@ -52,7 +52,6 @@ typedef enum {
     TELEBOT_ERROR_NO_MESSAGE 		= -6,   /**< No message on server */
 } telebot_error_e;
 
-
 /**
  * @} // end of APIs
  */
